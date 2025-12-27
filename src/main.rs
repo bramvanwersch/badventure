@@ -7,6 +7,5 @@ use crate::utility::Config;
 
 fn main() {
     let config = Config::new("config.txt");
-    println!("server: {}", config.server);
     parse_args(&config);
 }

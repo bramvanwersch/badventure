@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{blocking::RequestBuilder, StatusCode};
 
-use crate::utility::Config;
+use crate::utility::{read_token, Config};
 
 pub struct ServerRequest<'a> {
     path: String,
@@ -14,19 +14,29 @@ pub struct ServerRequest<'a> {
 }
 
 impl<'a> ServerRequest<'a> {
-    pub fn new(path: &str, data: Vec<(&str, &str)>, config: &'a Config) -> ServerRequest<'a> {
+    pub fn new(
+        path: &str,
+        data: Vec<(&str, &str)>,
+        config: &'a Config,
+        add_token: bool,
+    ) -> Result<ServerRequest<'a>, Box<dyn std::error::Error>> {
         // form body
         let mut body_pieces = Vec::new();
         for (name, value) in data {
             body_pieces.push(format!("{}:{}", name, value));
         }
-        ServerRequest {
+        if add_token {
+            let token = read_token(config)
+                .map_err(|_| "You are not logged in. Please login using the login command")?;
+            body_pieces.push(format!("token:{token}"));
+        }
+        Ok(ServerRequest {
             path: path.to_string(),
             body: body_pieces.join("\n"),
             config,
             response_data: HashMap::new(),
             response_code: None,
-        }
+        })
     }
 
     pub fn send(&mut self, method: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -57,7 +67,6 @@ impl<'a> ServerRequest<'a> {
         let response = message.send()?;
         self.response_code = Some(response.status());
         let body = response.text_with_charset("utf-8")?;
-        println!("{}", body);
         for line in body.lines() {
             if let Some((key, value)) = line.split_once(":") {
                 self.response_data

@@ -1,39 +1,38 @@
+use std::collections::HashMap;
+
+use crate::interface::write_warning;
 use crate::server_interface::{create, login};
 use crate::Config;
 
+type CommandFunction = fn(&Config) -> Result<(), Box<dyn std::error::Error>>;
+
 pub fn parse_args(config: &Config) {
+    let commands = HashMap::<String, CommandFunction>::from([
+        ("login".to_string(), login as CommandFunction),
+        ("create".to_string(), create as CommandFunction),
+    ]);
     let pattern = std::env::args()
         .nth(1)
         .expect("Missing command, choose one of do, check or move or login");
-    match pattern.as_str() {
-        "do" => {
-            println!("WE doing");
+    let result = commands.get(&pattern).ok_or(format!(
+        "Invalid command '{}', choose one of {}",
+        pattern,
+        get_command_options(&commands)
+    ));
+    match result {
+        Ok(func) => {
+            let _ = func(config).map_err(|e| write_warning(&e.to_string()));
         }
-        "check" => {
-            println!("WE checking");
-        }
-        "move" => {
-            println!("WE moving");
-        }
-        "login" => {
-            let username = std::env::args().nth(2).expect("Expected a username");
-            let password = std::env::args().nth(3).expect("Expected a password");
-            login(username.as_str(), password.as_str(), config).unwrap();
-        }
-        "create" => {
-            let username = std::env::args().nth(2).expect("Expected a username");
-            let password = std::env::args().nth(3).expect("Expected a password");
-            let password_repeat = std::env::args().nth(4).expect("Expected a repeat password");
-            create(
-                username.as_str(),
-                password.as_str(),
-                password_repeat.as_str(),
-                config,
-            )
-            .unwrap();
-        }
-        _ => {
-            println!("Invalid command, choose one of; do, check or move or login");
+        Err(e) => {
+            write_warning(&e);
         }
     }
+}
+
+fn get_command_options(commands: &HashMap<String, CommandFunction>) -> String {
+    commands
+        .keys()
+        .map(|k| k.to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
 }
