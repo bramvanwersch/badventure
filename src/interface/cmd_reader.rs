@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::interface::write_warning;
-use crate::server_interface::{create, login};
+use crate::server_interface::{create, examine, login};
 use crate::Config;
 
 type CommandFunction = fn(&Config) -> Result<(), Box<dyn std::error::Error>>;
@@ -10,6 +10,7 @@ pub fn parse_args(config: &Config) {
     let commands = HashMap::<String, CommandFunction>::from([
         ("login".to_string(), login as CommandFunction),
         ("create".to_string(), create as CommandFunction),
+        ("examine".to_string(), examine as CommandFunction),
     ]);
     let pattern = std::env::args()
         .nth(1)

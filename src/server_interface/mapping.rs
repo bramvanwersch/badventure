@@ -41,7 +41,7 @@ pub fn create(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn examine_location(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+pub fn examine(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let mut request = ServerRequest::new("examine", vec![], config, true)?;
     request.send("post")?;
     write_response(&request)?;
